@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="sys_ui_application">
+    <sys_ui_application action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <hint/>
+        <name>Custom Dashboard Object</name>
+        <order/>
+        <roles>x_snc_custom_vis.custom_dashboard_object_user</roles>
+        <sys_class_name>sys_ui_application</sys_class_name>
+        <sys_created_by>adam</sys_created_by>
+        <sys_created_on>2019-03-29 18:24:58</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>ffb4f72c13ecf30005ef54c32244b006</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Custom Dashboard Object</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_application_ffb4f72c13ecf30005ef54c32244b006</sys_update_name>
+        <sys_updated_by>adam</sys_updated_by>
+        <sys_updated_on>2019-03-29 18:24:58</sys_updated_on>
+    </sys_ui_application>
+</record_update>
