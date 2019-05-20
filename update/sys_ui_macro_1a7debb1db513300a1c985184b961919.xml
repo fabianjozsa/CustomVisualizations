@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro is a reusable two layer pie chart.</description>
+        <media_type/>
+        <name>visual_double_donut</name>
+        <scoped_name>x_snc_custom_vis_visual_double_donut</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:53:22</sys_created_on>
+        <sys_id>1a7debb1db513300a1c985184b961919</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>visual_double_donut</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_1a7debb1db513300a1c985184b961919</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:53:22</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+<script>
+customFilter${jvar_uuid}.clearData = function ()
+{
+    customFilter${jvar_uuid}.data.l1 = false;
+    customFilter${jvar_uuid}.data.l2 = false;
+};
+
+customFilter${jvar_uuid}.processResults = function (results, additionalVars)
+{
+    customFilter${jvar_uuid}.data[additionalVars.level] = results.result;
+    customFilter${jvar_uuid}.renderChart();
+};
+
+customFilter${jvar_uuid}.getScores = function ()
+{
+    customFilter${jvar_uuid}.clearData();
+    var filter = customFilter${jvar_uuid}.getCombinedFilters();
+    var url = '/api/now/stats/' + customFilter${jvar_uuid}.config.table + '?sysparm_display_value=all$[AMP]sysparm_count=true';
+    if(filter)
+    {
+        url += '$[AMP]sysparm_query=' + filter;
+    }
+    customFilter${jvar_uuid}.getData(url + '$[AMP]sysparm_group_by=' + customFilter${jvar_uuid}.config.l1.field, {level: 'l1'});
+    customFilter${jvar_uuid}.getData(url + '$[AMP]sysparm_group_by=' + customFilter${jvar_uuid}.config.l1.field + ',' + customFilter${jvar_uuid}.config.l2.field, {level: 'l2'}); 
+};
+
+customFilter${jvar_uuid}.formatL1Data = function ()
+{
+    var rawData = customFilter${jvar_uuid}.data.l1;
+    var colors = Highcharts.getOptions().colors;
+    var data = [];
+    //customFilter${jvar_uuid}.log (rawData.length);
+    for (var g = 0; g ${AMP}lt; rawData.length; g++)
+    {
+        var name = rawData[g].groupby_fields[0].display_value;
+        var sys_id = rawData[g].groupby_fields[0].value;
+        if(name == '')
+        {
+            name = customFilter${jvar_uuid}.config.l1.missing;
+        }
+        var url = '/' + customFilter${jvar_uuid}.config.table + '_list.do?sysparm_query=';
+        var filter = customFilter${jvar_uuid}.getCombinedFilters();
+        if(filter)
+        {
+            url += encodeURI(filter) + '%5E';
+        }
+        url += customFilter${jvar_uuid}.config.l1.field + '%3D' + sys_id;
+        data.push({
+            name: name,
+            sys_id: sys_id,
+            y: parseFloat(rawData[g].stats.count),
+            url: url,
+            color: colors[g]
+        });
+        customFilter${jvar_uuid}.colors[sys_id] = colors[g];
+    }
+
+    customFilter${jvar_uuid}.formattedData.l1 = data;
+    return;
+};
+
+customFilter${jvar_uuid}.formatL2Data = function ()
+{
+    var rawData = customFilter${jvar_uuid}.data.l2;
+    var colors = Highcharts.getOptions().colors;
+    var brightness;
+    var lastGroup = 'firstone';
+    var data = [];
+    var subcatcount = 0;
+    //customFilter${jvar_uuid}.log (rawData.length);
+    var l1index = 0;
+    var l2index = 1;
+    if(rawData.length > 0 $[AND] rawData[0].groupby_fields[0].field == customFilter${jvar_uuid}.config.l2.field)
+    {
+        l1index = 1;
+        l2index = 0;
+    }
+    for (var g = 0; g ${AMP}lt; rawData.length; g++)
+    {
+        var parentName = rawData[g].groupby_fields[l1index].display_value;
+        var parentSysId = rawData[g].groupby_fields[l1index].value;
+
+        if(parentName == '')
+        {
+            parentName = customFilter${jvar_uuid}.config.l1.missing;
+        }
+        if(lastGroup != parentName)
+        {
+            lastGroup = parentName;
+            subcatcount = 0;
+            //customFilter${jvar_uuid}.log ('reseting brightness for ' + parentName);
+        } else {
+            subcatcount++;
+        }
+
+        var sys_id = rawData[g].groupby_fields[l2index].value;
+        name = rawData[g].groupby_fields[l2index].display_value;
+        if(name == '')
+        {
+            name = customFilter${jvar_uuid}.config.l2.missing;
+        }
+
+        fullName = parentName + ' - ' + name;
+        var sys_id = rawData[g].groupby_fields[l2index].value;
+        //customFilter${jvar_uuid}.log (name + ' - ' + rawData[g].stats.count);
+        //brightness = 0.2 - (j / drillDataLen) / 5;
+        brightness = 0.2 - (subcatcount / 5) / 5;
+
+        var url = '/' + customFilter${jvar_uuid}.config.table + '_list.do?sysparm_query=';
+        if(customFilter${jvar_uuid}.canvas.existingFilters)
+        {
+            url += customFilter${jvar_uuid}.canvas.existingFilters + '%5E';
+        }
+        url += customFilter${jvar_uuid}.config.l1.field + '%3D' + parentSysId + '%5E' + customFilter${jvar_uuid}.config.l2.field + '%3D' + sys_id;
+
+        data.push({
+            fullName: fullName,
+            name: name,
+            sys_id: sys_id,
+            parentName: parentName,
+            parentSysId: parentSysId,
+            y: parseFloat(rawData[g].stats.count),
+            url: url,
+            color: Highcharts.Color(customFilter${jvar_uuid}.colors[parentSysId]).brighten(brightness).get()
+        });
+    }
+    customFilter${jvar_uuid}.formattedData.l2 = data;
+    return;
+};
+    
+customFilter${jvar_uuid}.renderChart = function ()
+{
+
+    if(customFilter${jvar_uuid}.data.l1 == false || customFilter${jvar_uuid}.data.l2 == false)
+    {
+        customFilter${jvar_uuid}.log ('Data not fully loaded yet');
+    }
+
+    // debug the data
+    //customFilter${jvar_uuid}.log (JSON.stringify(customFilter${jvar_uuid}.data));
+
+    var displayRes = 'Unknown';
+    var l1Data = customFilter${jvar_uuid}.formatL1Data(customFilter${jvar_uuid}.data.l1);
+    var l2Data = customFilter${jvar_uuid}.formatL2Data(customFilter${jvar_uuid}.data.l2);
+
+    // customFilter${jvar_uuid}.log (l1Data);
+
+    var colors = Highcharts.getOptions().colors;
+
+    // Create the chart
+    customFilter${jvar_uuid}.elements.main.highcharts({
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: customFilter${jvar_uuid}.config.title
+        },
+        subtitle: {
+            text: customFilter${jvar_uuid}.config.subtitle
+        },
+        yAxis: {
+            title: {
+                text: ''
+            }
+        },
+        plotOptions: {
+            pie: {
+                shadow: false,
+                center: ['50%', '50%']
+            }
+        },
+        tooltip: {
+            valueSuffix: ''
+        },
+        series: [{
+            name: customFilter${jvar_uuid}.config.l1.name,
+            data: customFilter${jvar_uuid}.formattedData.l1,
+            size: '60%',
+            tooltip: {
+                headerFormat: '',
+                pointFormatter: function () {
+                    // display only if larger than 1
+                    return this.y ${AMP}gt; 0 ? '${AMP}lt;b${AMP}gt;' + this.name + ':${AMP}lt;/b${AMP}gt; ' + this.y : null;
+                }
+            },
+            dataLabels: {
+                formatter: function () {
+                    return this.y ${AMP}gt; 5 ? this.point.name : null;
+                },
+                color: '#ffffff',
+                distance: -30
+            },
+            point: {
+                events: {
+                    click: function (v) {
+                        if(this.hasOwnProperty('url'))
+                        {
+                            //customFilter${jvar_uuid}.log (this.url);
+                            window.open(this.url);
+                        }
+                    }
+                }
+            }
+        }, {
+            name: customFilter${jvar_uuid}.config.l2.name,
+            data: customFilter${jvar_uuid}.formattedData.l2,
+            size: '80%',
+            innerSize: '60%',
+            tooltip: {
+                headerFormat: '',
+                pointFormatter: function () {
+                    // display only if larger than 1
+                    return this.y ${AMP}gt; 0 ? this.parentName + '${AMP}lt;br /${AMP}gt;${AMP}lt;b${AMP}gt;' + this.name + ':${AMP}lt;/b${AMP}gt; ' + this.y : null;
+                }
+            },
+            dataLabels: {
+                formatter: function () {
+                    // display only if larger than 1
+                    return this.y ${AMP}gt; 1 ? '${AMP}lt;b${AMP}gt;' + this.point.name + ':${AMP}lt;/b${AMP}gt; ' + this.y : null;
+                }
+            },
+            point: {
+                events: {
+                    click: function (v) {
+                        if(this.hasOwnProperty('url'))
+                        {
+                            //customFilter${jvar_uuid}.log (this.url);
+                            window.open(this.url);
+                        }
+                    }
+                }
+            },
+            id: 'l2'
+        }],
+        responsive: {
+            rules: [{
+                condition: {
+                    maxWidth: 400
+                },
+                chartOptions: {
+                    series: [{
+                        id: 'l2',
+                        dataLabels: {
+                            enabled: false
+                        }
+                    }]
+                }
+            }]
+        }
+    });
+
+}; // end renderChart
+</script>
+
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

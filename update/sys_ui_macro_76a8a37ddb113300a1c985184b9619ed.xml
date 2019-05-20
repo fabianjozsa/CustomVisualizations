@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro a reusable custom string filter typically used for searching a text field with CONTAINS.</description>
+        <media_type/>
+        <name>filter_string</name>
+        <scoped_name>x_snc_custom_vis_filter_string</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:32:23</sys_created_on>
+        <sys_id>76a8a37ddb113300a1c985184b9619ed</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>filter_string</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_76a8a37ddb113300a1c985184b9619ed</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:32:23</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<div id="${jvar_uuid}_display" style="display: none">
+    <input id='${jvar_uuid}_text' class="form-control widget-content" value="" />
+</div>
+
+<script>
+    customFilter${jvar_uuid}.displayInput();
+    // select input
+    customFilter${jvar_uuid}.elements.textField = $j('#${jvar_uuid}_text');
+    // handle the field changes
+    customFilter${jvar_uuid}.elements.textField.change(function()
+    {
+        var filterObj = {id: uuid${jvar_uuid}, filters: []};
+        if (customFilter${jvar_uuid}.elements.textField.val().length > 0) {
+            for(var t = 0; t ${AMP}lt; customFilter${jvar_uuid}.config.mapping.length; t++)
+            {
+                customFilter${jvar_uuid}.log('Adding filter for table: ' + customFilter${jvar_uuid}.config.mapping[t].table);
+                filterObj.filters.push({
+                    table: customFilter${jvar_uuid}.config.mapping[t].table,
+                    filter: customFilter${jvar_uuid}.config.mapping[t].filterPrepend + customFilter${jvar_uuid}.elements.textField.val() + customFilter${jvar_uuid}.config.mapping[t].filterAppend
+                });
+            }
+            // console.log(filterObj);
+            // add the filter
+            customFilter${jvar_uuid}.dashboardMessageHandler.publishMessage(filterObj.filters);
+            // set the default value for next reload
+            customFilter${jvar_uuid}.persistPublishedFilter(filterObj.filters);
+        } else {
+            customFilter${jvar_uuid}.removeFilter();
+            customFilter${jvar_uuid}.removePersistedFilter();
+        }
+    });
+
+    customFilter${jvar_uuid}.setDefaultValues =  function (persistedFilter)
+    {
+        //customFilter${jvar_uuid}.log('Setting initial values', persistedFilter);
+        if(persistedFilter)
+        {
+            customFilter${jvar_uuid}.elements.textField.val(persistedFilter);
+            customFilter${jvar_uuid}.elements.textField.change();
+            //customFilter${jvar_uuid}.log('String default set');
+        }
+    };
+</script>
+
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro setups a line chart with tiers in the background.</description>
+        <media_type/>
+        <name>visual_line_chart_with_tiers</name>
+        <scoped_name>x_snc_custom_vis_visual_line_chart_with_tiers</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 22:05:12</sys_created_on>
+        <sys_id>5a30f735db513300a1c985184b96195d</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>visual_line_chart_with_tiers</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_5a30f735db513300a1c985184b96195d</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 22:05:12</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="jelly:core" xmlns:g2="glide">
+
+<script>
+
+<g:macro_invoke macro="x_snc_custom_vis_setup_breakdown" />
+
+customFilter${jvar_uuid}.clearScore = function ()
+{
+    customFilter${jvar_uuid}.data = {};
+    customFilter${jvar_uuid}.formattedData = [];
+};
+
+customFilter${jvar_uuid}.getScores = function (indicator, breakdown, element)
+{
+    // if you need to retrieve multiple indicators, make this a CSV and you can still do this in one call
+    var uuid = indicator;
+    if(element)
+    {
+        uuid += ':' + breakdown + ':' + element;
+    }
+    // be sure to check out the REST API Explorer to understand what the different options do
+    var params = "sysparm_display=all$[AMP]sysparm_include_scores=true$[AMP]sysparm_uuid=" + uuid;
+    var url = "/api/now/pa/scorecards?" + params;
+
+    customFilter${jvar_uuid}.getData(url, null);
+};
+
+customFilter${jvar_uuid}.processResults = function (results, additionalVars)
+{
+    customFilter${jvar_uuid}.data = results.result;
+    customFilter${jvar_uuid}.formatScores();
+};
+
+customFilter${jvar_uuid}.formatScores = function ()
+{
+    customFilter${jvar_uuid}.formattedData = [];
+    customFilter${jvar_uuid}.config.series = customFilter${jvar_uuid}.data[0].indicator.display_value;
+
+    if(customFilter${jvar_uuid}.data[0].hasOwnProperty('element'))
+    {
+        customFilter${jvar_uuid}.config.title = customFilter${jvar_uuid}.data[0].element.display_value;
+    } else {
+        customFilter${jvar_uuid}.config.title = '';
+    }
+
+    for(var r = customFilter${jvar_uuid}.data[0].scores.length - 1 ; r ${AMP}gt;= 0; r--)
+    {
+        var point = customFilter${jvar_uuid}.data[0].scores[r];
+        customFilter${jvar_uuid}.formattedData.push({x: new Date(point.start_at) , y: point.value, name: point.period, value_formatted: point.value_formatted,  url: "/open_some_url/" + point.period});
+    }
+
+    try {
+        customFilter${jvar_uuid}.renderChart();
+    } catch (e) {
+        customFilter${jvar_uuid}.log("Failed to rendering chart: ", e); // + " - " + this.response);
+    }
+};
+
+customFilter${jvar_uuid}.showFilters = function ()
+{
+    customFilter${jvar_uuid}.clearScore();
+
+    var breakdown = null;
+    var element = null;
+
+    if(window.SNC.PA.breakdown_source)
+    {
+        breakdown = customFilter${jvar_uuid}.getBreakdownIdFromSource(customFilter${jvar_uuid}.config.indicator, window.SNC.PA.breakdown_source);
+    }
+    if(window.SNC.PA.breakdown_element)
+    {
+        element = window.SNC.PA.breakdown_element;
+    }
+    customFilter${jvar_uuid}.getScores(customFilter${jvar_uuid}.config.indicator, breakdown, element);
+};
+
+customFilter${jvar_uuid}.renderChart = function ()
+{
+    customFilter${jvar_uuid}.elements.main.highcharts({
+        chart: {
+            type: 'spline'
+        },
+        title: {
+            text: customFilter${jvar_uuid}.config.title
+        },
+        subtitle: {
+            text: ''
+        },
+        xAxis: {
+            type: 'datetime',
+            labels: {
+                overflow: 'justify'
+            }
+        },
+        yAxis: {
+            title: {
+                text: ''
+            },
+            minorGridLineWidth: 0,
+            gridLineWidth: 0,
+            alternateGridColor: null,
+            plotBands: [
+            {
+                from: 0,
+                to: 50,
+                color: '#ff9999',
+                label: {
+                    text: 'Way Below Target',
+                    style: {
+                        color: '#606060'
+                    }
+                }
+            }, {
+                from: 50,
+                to: 60,
+                color: '#ffcc00',
+                label: {
+                    text: 'Near Target',
+                    style: {
+                        color: '#606060'
+                    }
+                }
+            }, {
+                from: 60,
+                to: 75,
+                color: '#ccff99',
+                label: {
+                    text: 'Closer to Target',
+                    style: {
+                        color: '#606060'
+                    }
+                }
+            }, {
+                from: 75,
+                to: 76,
+                color: '#009933',
+                label: {
+                    text: 'Target',
+                    style: {
+                        color: '#606060'
+                    }
+                }
+            }, {
+                from: 76,
+                to: 120,
+                label: {
+                    text: 'Beat Target',
+                    style: {
+                        color: '#606060'
+                    }
+                }
+            }]
+        },
+        tooltip: {
+            headerFormat: '',
+            pointFormatter: function () {
+                return '${AMP}lt;b${AMP}gt;' + this.name + ':${AMP}lt;/b${AMP}gt; ' + this.value_formatted;
+            }
+        },
+        plotOptions: {
+            spline: {
+                lineWidth: 4,
+                states: {
+                    hover: {
+                        lineWidth: 5
+                    }
+                },
+                marker: {
+                    enabled: false
+                }
+            }
+        },
+        series: [{
+            name: customFilter${jvar_uuid}.config.series,
+            data: customFilter${jvar_uuid}.formattedData,
+            color: '#000000',
+            label: {enabled: false},
+            point: {
+                events: {
+                    click: function (v) {
+                        if(this.hasOwnProperty('url'))
+                        {
+                            alert(this.url);
+                        }
+                    }
+                }
+            }
+        }],
+        navigation: {
+            menuItemStyle: {
+                fontSize: '10px'
+            }
+        }
+    });
+};
+</script>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro a reusable custom filter for creating a multiple choice dropdown.</description>
+        <media_type/>
+        <name>filter_multiple_choice</name>
+        <scoped_name>x_snc_custom_vis_filter_multiple_choice</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:46:45</sys_created_on>
+        <sys_id>c8fbab71db513300a1c985184b96192b</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>filter_multiple_choice</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_c8fbab71db513300a1c985184b96192b</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:46:45</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<g:evaluate var="jvar_custom_object" object="true" jelly="true">
+    var dynamicBlock = new GlideRecord('x_snc_custom_vis_dashboard_object');
+    dynamicBlock.get('${SAFE:jvar_sys_id}');
+    dynamicBlock;
+</g:evaluate>
+
+<g:macro_invoke macro="x_snc_custom_vis_setup_choices" />
+
+<style>
+    .form_control {
+        box-shadow: none;
+    }
+    .widget-content {
+        padding: 0px 9px 0px 9px;
+        margin-bottom: 5px;
+    }
+    .select2-search-choice-close {
+        height: inherit;
+        width: inherit;
+        top: 1px;
+    }
+    a.select2-search-choice-close:before {
+        font-size: 0.8em;
+        margin-left: 7px;
+        color: #869ab0;
+    }
+    .select2-container-multi .select2-choices .select2-search-choice {
+        float: left;
+        padding: 2px 20px 2px 5px;
+        border-radius: 30px;
+        border: 1px solid #bedfee;
+        color: #869ab0;
+        margin: 4px 0px 0px 4px;
+        background-color: #e7f3fb;
+    }
+</style>
+
+<div id="${jvar_uuid}_display" style="display: none">
+    <select id='${jvar_uuid}_select' class="form-control widget-content select2">
+        <g:options choiceList='${jvar_cl}' />
+    </select>
+    <select id='${jvar_uuid}_select_multiple' class="form-control widget-content select2" multiple='multiple'>
+        <g:options choiceList='${jvar_cl}' />
+    </select>   
+</div>
+<script>
+
+    customFilter${jvar_uuid}.displayInput();
+
+    customFilter${jvar_uuid}.elements.select = $j('#${jvar_uuid}_select');
+    customFilter${jvar_uuid}.elements.selectMultiple = $j('#${jvar_uuid}_select_multiple');
+    customFilter${jvar_uuid}.elements.selectMultiple.removeAttr('selected');
+
+    if (customFilter${jvar_uuid}.elements.select.select2)
+    {
+        customFilter${jvar_uuid}.elements.select.select2();
+        customFilter${jvar_uuid}.elements.selectMultiple.select2();
+    }
+    
+    customFilter${jvar_uuid}.elements.select.change(function(ev)
+    {
+        var target = $j(ev.target);
+        customFilter${jvar_uuid}.elements.selectMultiple.children('option[value="' + target.val() + '"]').attr('selected', 'selected');
+        customFilter${jvar_uuid}.elements.selectMultiple.trigger('change');
+    });
+    
+    customFilter${jvar_uuid}.elements.selectMultiple.change(function()
+    {
+        console.group('Applying Filters for: ' + customFilter${jvar_uuid}.logName);
+        var filterObj = {id: customFilter${jvar_uuid}.id, filters: []};
+        var selectFilterValues = [];
+        $j('#${jvar_uuid}_select_multiple option:selected').each(function()
+        {
+            if(this.value.length > 0)
+            {
+                selectFilterValues.push(this.value);
+            }
+        });
+
+        if(selectFilterValues.length > 0)
+        {
+            for(var t = 0; t ${AMP}lt; customFilter${jvar_uuid}.config.mapping.length; t++)
+            {
+                customFilter${jvar_uuid}.log('Adding filter for table: ' + customFilter${jvar_uuid}.config.mapping[t].table);
+                filterObj.filters.push({
+                    table: customFilter${jvar_uuid}.config.mapping[t].table,
+                    filter: customFilter${jvar_uuid}.config.mapping[t].filterPrepend + selectFilterValues.join(',') + customFilter${jvar_uuid}.config.mapping[t].filterAppend
+                });
+            }
+            customFilter${jvar_uuid}.dashboardMessageHandler.publishMessage(filterObj.filters);
+            // set the default value for next reload
+            customFilter${jvar_uuid}.persistPublishedFilter(filterObj.filters);
+        } else {
+            customFilter${jvar_uuid}.removeFilter();
+            customFilter${jvar_uuid}.removePersistedFilter();
+        }
+        console.groupEnd();
+    });
+
+    customFilter${jvar_uuid}.setDefaultValues =  function (persistedFilter)
+    {
+        //customFilter${jvar_uuid}.log('Setting initial values');
+        //customFilter${jvar_uuid}.log('persistedFilter', persistedFilter);
+        var defaultValue = persistedFilter;
+        var didChange = false;
+        for(var i = 0; i ${AMP}lt; defaultValue.length; i++)
+        {
+            if(defaultValue[i])
+            {
+                customFilter${jvar_uuid}.elements.selectMultiple.children('option[value="' + defaultValue[i] + '"]').attr('selected', 'selected');
+                didChange = true;
+            }
+        }
+        if(didChange)
+        {
+            customFilter${jvar_uuid}.elements.selectMultiple.trigger('change');
+        }
+    };
+</script>
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

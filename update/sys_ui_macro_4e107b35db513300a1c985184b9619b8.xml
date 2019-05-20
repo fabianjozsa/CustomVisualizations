@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro contains common logic to support listening to breakdown sources on a dashboard.</description>
+        <media_type/>
+        <name>setup_breakdown</name>
+        <scoped_name>x_snc_custom_vis_setup_breakdown</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 22:04:28</sys_created_on>
+        <sys_id>4e107b35db513300a1c985184b9619b8</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>setup_breakdown</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_4e107b35db513300a1c985184b9619b8</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 22:04:28</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<g:evaluate var="jvar_custom_object" object="true" jelly="true">
+    // this pulls a list of indicators from the config record, but this probably should be a related list with UUIDs so we can use this in the visualization too
+    var dynamicBlock = new GlideRecord('x_snc_custom_vis_dashboard_object');
+    dynamicBlock.get('${SAFE:jvar_sys_id}');
+    dynamicBlock;
+</g:evaluate>
+
+<!-- this will help us translate the breakdown source from the dashboard breakdown sys_id to the breakdown sys_id we need for the ScoreCard API  -->
+<g:evaluate var="jvar_indicator_breakdowns" object="true" jelly="true">
+    // get all the applicable breakdowns that might be called
+    var gr = new GlideRecord('pa_indicator_breakdowns');
+    gr.addQuery('indicator', 'IN', '${jvar_custom_object.getValue('indicator')}');
+    gr.query();
+    var breakdownMap = {};
+    while(gr.next())
+    {
+        if(breakdownMap.hasOwnProperty(gr.indicator.toString()) == false)
+        {
+            breakdownMap[gr.indicator.toString()] = {};
+        }
+        breakdownMap[gr.indicator.toString()][gr.breakdown.dimension.toString()] = gr.breakdown.toString();
+    }
+    JSON.stringify(breakdownMap);
+</g:evaluate>
+
+try {
+    customFilter${jvar_uuid}.breakdowns = <g:no_escape>${jvar_indicator_breakdowns}</g:no_escape>;
+} catch(e) {
+    customFilter${jvar_uuid}.log(e);
+}
+
+customFilter${jvar_uuid}.getBreakdownIdFromSource = function (indicator, breakdown_source) {
+    return customFilter${jvar_uuid}.breakdowns[indicator][breakdown_source];
+};
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

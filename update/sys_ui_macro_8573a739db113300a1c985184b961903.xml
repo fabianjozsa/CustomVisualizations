@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro contains all the standard functions used for Custom Interactive Filters and Custom Visualizations.&#13;
+</description>
+        <media_type/>
+        <name>main_container</name>
+        <scoped_name>x_snc_custom_vis_main_container</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:12:47</sys_created_on>
+        <sys_id>8573a739db113300a1c985184b961903</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>main_container</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_8573a739db113300a1c985184b961903</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:12:47</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<!-- Set Unique Identifier -->
+<g:evaluate var="jvar_uuid" object="true">
+    'UUID_' + Math.round(Math.random() * 10000000000);
+</g:evaluate>
+
+<j:set var="jvar_verbose_logging" value="${(gs.getProperty('x_snc_custom_vis.logging.client.verbose', 'true') == 'true')}"/>
+
+<!-- Create the area where we will create our chart -->
+<div id="${jvar_uuid}"><div class="icon icon-loading"></div></div>
+
+<script>
+// identify the widget GUID
+var uuid${jvar_uuid} = $j("#${jvar_uuid}").closest(".grid-widget-content")[0].getAttribute("data-original-widget-sysid");
+
+// Initialize the object to keep us safely scoped
+var customFilter${jvar_uuid} = (function()
+{
+    // main object we will be using
+    var customFilter = {
+    id: uuid${jvar_uuid}
+    ,logName: uuid${jvar_uuid}
+    ,config: {table: null, display: {}, mapping: null}
+    ,elements: {main: $j('#${jvar_uuid}'), source: null}
+    ,filter: {}
+    ,dashboardMessageHandler: null
+    ,data: {l1: false, l2: false}
+    ,formattedData: {l1: false, l2: false}
+    ,colors: {}
+    ,canvas: {existingFilters: null}
+    ,eventbus: function(){ return SNC.canvas.eventbus;}()
+    ,filterUtil: function(){ return SNC.canvas.interactiveFilters;}()
+    ,jsonErrorCount: 0
+    ,pane: null
+    ,verboseLogging: ${jvar_verbose_logging}
+    };
+    
+    // private variables
+    var EVENTS = {
+    REMOVE_FILTER : 'remove-interactive-filter',
+    RESET_FILTER: 'reset-interactive-filter'
+    };
+    
+    // isInResponsiveDashboard will be true if the current page is Responsive Canvas page
+    var isInResponsiveDashboard = (typeof window.SNC !== 'undefined' $[AMP]$[AMP] typeof window.SNC.canvas !== 'undefined'
+    $[AMP]$[AMP] typeof window.SNC.canvas.isGridCanvasActive !== 'undefined' $[AMP]$[AMP]
+    typeof window.SNC.canvas.interactiveFilters !== 'undefined');
+
+    // don't add a subscriber if we are in preview mode
+    var isNotInPreviewMode = customFilter.elements.main.closest(".grid-widget-content").length > 0;
+
+    // set everything up once it is loaded
+    customFilter.init = function init()
+    {
+        customFilter.pane = customFilter.getPane();
+
+        // Parse the config
+        try {
+            customFilter.config = <g:no_escape>${jvar_config}</g:no_escape>;
+        } catch(e) {
+            customFilter.log(e);
+        }
+
+        customFilter.setLogName();
+        console.group(customFilter.logName + ' Initialization');
+        // print some helpful debug info
+        customFilter.log('Type: ${jvar_type}');
+
+        // gets the persistent ID for the widget which is unique to the dashboard/tab/widget
+        customFilter.id = customFilter.elements.main.closest(".grid-widget-content")[0].getAttribute("data-original-widget-sysid");
+
+        // don't initialize if we aren't on a dashboard
+        if (isInResponsiveDashboard) 
+        {
+            // Register DashboardMessageHandler only once
+            if(!customFilter.dashboardMessageHandler)
+            {
+                customFilter.registerDashboardMessageHandler(customFilter.id);
+            }
+
+            <j:if test="${jvar_type == 'custom_interactive_filter'}">
+                // this is the default behavior which doesn't work with custom filters
+                //customFilter.filterUtil.fetchDefaultValues(SNC.canvas.layoutJson.canvasSysId);
+                // use a custom call to get and load the defaults
+                customFilter.fetchDefaultValues(SNC.canvas.layoutJson.canvasSysId);
+                var persistedFilter = customFilter.filterUtil.getDefaultValueByKey(customFilter.id);
+                if (persistedFilter $[AMP]$[AMP] persistedFilter.length)
+                {
+                    customFilter.setDefaultValues(persistedFilter);
+                }
+            </j:if>
+
+            // don't attach to events if we are in preview mode
+            if(isNotInPreviewMode)
+            {
+                customFilter.eventbus.subscribe('setBreakdownParams', customFilter.showFilters);
+            }
+
+        } else {
+            console.error("custom filter will not work on non canvas mode");
+        }
+
+        // set the style if there is one to set
+        customFilter.setStyle();
+        <j:if test="${jvar_type == 'custom_visualization'}">
+            customFilter.showFilters();
+        </j:if>
+        //customFilter.log('init complete');
+        console.groupEnd()
+    };
+
+    // when logging, display something useful
+    customFilter.setLogName = function ()
+    {
+        customFilter.logName = customFilter.decodeHtml(customFilter.pane.prefs.title);
+        return;
+    };
+
+    customFilter.decodeHtml = function(html) 
+    {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+
+    // return index of the array of panes
+    customFilter.getPaneIndex = function (pane) 
+    {
+        return pane.widgetSysId == customFilter.id;
+    }
+
+    // get the pane so we can access the properties
+    customFilter.getPane = function ()
+    {
+        return SNC.canvas.layoutJson.panes[SNC.canvas.layoutJson.panes.findIndex(customFilter.getPaneIndex)];
+    }
+
+    // call to look up persistent defaults.  This is very similar to the standard call but the success is customized.  
+    // @TODO see if we can use the OOTB script in SNC.canvas.interactiveFilters - getDefaultValueByKey()
+    customFilter.fetchDefaultValues = function (canvasSysId) {
+        return $j.ajax({
+            url: "xmlhttp.do",
+            contentType: "application/json;charset=utf-8",
+            headers: {'X-UserToken': window.g_ck},
+            data: {
+                'sysparm_scope': 'global',
+                'sysparm_want_session_messages': 'true',
+                'sysparm_processor': 'InteractiveFilterDefaults',
+                'sysparm_name': 'getDefaultValues',
+                'sysparm_canvas_id': canvasSysId
+            },
+            error: function (jqXHR, error, errorThrown) {
+                if (window.console) console.log('Error getting filter defaults', errorThrown);
+            },
+            success: function (data) {
+                //customFilter.log('fetchDefaultValues - success', data);
+                var result = $j(data).find("result").first();
+                var defaultValues;
+                if(result.attr('filters'))
+                {
+                    defaultValues = JSON.parse(result.attr('filters'));
+                }
+                customFilter.getFilterValues(defaultValues);
+                return;
+            }
+        });
+    };
+
+    // process raw data to get just the values
+    customFilter.getFilterValues = function (defaultObj)
+    {
+        if(!defaultObj)
+        {
+            customFilter.log('No persistent values found');
+            return;
+        }
+        var values = [];
+        for(var f = 0; f ${AMP}lt; defaultObj.length; f++)
+        {
+            if(defaultObj[f].id == customFilter.id)
+            {
+                for(var p in defaultObj[f].queryParts[0])
+                {
+                    values = defaultObj[f].queryParts[0][p].values;
+                    break;
+                };
+            }
+        }
+        if (values $[AMP]$[AMP] values.length)
+        {
+            customFilter.log('Persistent values found:', values);
+            customFilter.setDefaultValues(values);
+        } else {
+            customFilter.log('Persistent values found but they are empty:', defaultObj);
+        }
+    };
+
+    // standard log function
+    customFilter.log = function (str, obj)
+    {
+        console.log(customFilter.logName + ': ' + str);
+        if(obj)
+        {
+            console.log(obj);
+        }
+    };
+
+    // applies style to the custom visualization
+    customFilter.setStyle = function ()
+    {
+        if(customFilter.config.display $[AND] customFilter.config.display.style)
+        {
+            customFilter.elements.main.css(customFilter.config.display.style);
+        }
+    };
+
+    customFilter.getFilters = function () 
+    {
+        var filters = '';
+        var defaultFilters = customFilter.filterUtil.defaultValues;
+        for (var key in defaultFilters) {
+            if (defaultFilters.hasOwnProperty(key)) {
+                defaultFilters[key].map(function(filter){
+                    if(filter.table === customFilter${$jvar_uuid}.config.table)
+                        filters += filter.filter + '^';
+                });
+            }
+        }
+        filters = filters.substr(0, filters.lastIndexOf('^'));
+        return filters;
+    };
+
+    // we parse JSON a lot so a standard call with error handling
+    customFilter.parseJSONreturn = function (response)
+    {
+        try {
+            return JSON.parse(response);
+        } catch (e) {
+            // there often seems to be one of these, so ignore the first one for now until we can stop that from happening
+            customFilter.jsonErrorCount++;
+            if(customFilter.jsonErrorCount > 1)
+            {
+                customFilter.log ("Failed to parse response: " + e + " - " + response);
+            }
+            
+            return false;
+        } 
+    };
+
+    <j:if test="${jvar_type == 'custom_interactive_filter'}">
+        // To persist filter
+        customFilter.persistPublishedFilter = function (finalFilter) 
+        {
+            customFilter.log('finalFilter', finalFilter);
+            // if you save a filter with a RLC, then no defaults work for some reason
+            if(JSON.stringify(finalFilter).indexOf('RLQUERY') == -1)
+            {
+                customFilter.filterUtil.setDefaultValue({
+                    id: customFilter.id,
+                    filters: finalFilter,
+                }, true);
+            } else {
+                customFilter.log('Unable to persist Related List Condition Filters');
+            }
+        };
+
+        // Removes persisted values
+        customFilter.removePersistedFilter = function ()
+        {
+            customFilter.filterUtil.removeDefaultValue(customFilter.id, true);
+        };
+        
+        // Clear filters
+        customFilter.removeFilter = function () 
+        {
+            if (customFilter.dashboardMessageHandler)
+            {
+                customFilter.dashboardMessageHandler.removeFilter();
+            }
+        };
+
+        // delete filters on Pane removal
+        customFilter.onDestroyFilterCallback = function (config) {
+            customFilter.log("destroy called", config);
+            if (customFilter.id === config.sys_id) {
+                customFilter.removeFilter();
+                if (isInResponsiveDashboard) {
+                    customFilter.eventbus.unsubscribe(EVENTS.REMOVE_FILTER);
+                    customFilter.eventbus.unsubscribe(EVENTS.RESET_FILTER);
+                }
+                customFilter.dashboardMessageHandler._unsubscribeFromEvents();
+                customFilter.removePersistedFilter();
+            }
+        };
+        
+        // Register handlers to handle Reset and Remove filter on Dashboard
+        customFilter.registerDashboardMessageHandler =  function (id) 
+        {
+            var dashboardMessageHandler = new DashboardMessageHandler(id);
+            if (isInResponsiveDashboard $[AMP]$[AMP] customFilter.eventbus) {
+                customFilter.dashboardMessageHandler = dashboardMessageHandler;
+                customFilter.eventbus.subscribe(EVENTS.REMOVE_FILTER, customFilter.onDestroyFilterCallback);
+                customFilter.eventbus.subscribe(EVENTS.RESET_FILTER, customFilter.onResetFilterCallback);
+            }
+        };
+
+        // this logic is specific to each custom filter.  This is a place holder which will warn you if you are missing the logic rather than error out
+        customFilter.setDefaultValues =  function (persistedFilter) 
+        {
+            console.log('No method for setDefaultValues set');
+        };
+
+        customFilter.onResetFilterCallback = function ()
+        {
+        };
+
+        // for filters, take the input from the dynamic content block and load into the main div
+        customFilter.displayInput = function ()
+        {
+            customFilter.elements.main = $j('#${jvar_uuid}');
+            customFilter.elements.source = $j('#${jvar_uuid}_display');
+            customFilter.elements.main.html(customFilter.elements.source.html());
+        };
+    
+    </j:if> // end filter specific functions
+
+
+    <j:if test="${jvar_type == 'custom_visualization'}">
+        // Register handlers to handle Reset and Remove filter on Dashboard
+        customFilter.registerDashboardMessageHandler =  function (id) 
+        {
+            var dashboardMessageHandler = new DashboardMessageHandler(id);
+            if (isInResponsiveDashboard $[AMP]$[AMP] customFilter.eventbus) {
+                customFilter.dashboardMessageHandler = dashboardMessageHandler;
+                // this line is the difference between filters and custom visualizations
+                customFilter.dashboardMessageHandler.setCallback(function(){setTimeout(function(){customFilter.showFilters();}, 100)});
+                customFilter.eventbus.subscribe(EVENTS.REMOVE_FILTER, customFilter.onDestroyFilterCallback);
+                customFilter.eventbus.subscribe(EVENTS.RESET_FILTER, customFilter.onResetFilterCallback);
+            }
+        };
+
+        // standard call to get data from Table/Aggregate/ScoreCard APIs
+        customFilter.getData = function (url, additionalVars)
+        {
+            if(customFilter.verboseLogging)
+            {
+                customFilter.log ('URL: ' + url);
+                customFilter.log ('additionalVars', additionalVars);
+                
+            }
+            var client = new XMLHttpRequest();
+            client.open('GET', url);
+            client.setRequestHeader('Accept', 'application/json');
+            client.setRequestHeader('Content-Type', 'application/json');
+            client.setRequestHeader('X-UserToken', window.g_ck);
+
+            client.onreadystatechange = function() {
+                if(this.readyState = this.DONE $[AMP]$[AMP] this.status == 200) {
+                    var results = customFilter.parseJSONreturn(this.response);
+                    if(results != false)
+                    {
+                        // you may need to over ride this in your visualization
+                        customFilter.processResults(results, additionalVars);
+                    }
+                }
+            }; 
+            client.send(null);
+        };
+
+        // this logic is specific to each custom filter.  This is a place holder which will warn you if you are missing the logic rather than error out
+        customFilter.processResults = function ()
+        {
+            customFilter.data = results.result;
+            // renderChart is defined in the individual visualization
+            customFilter.renderChart(additionalVars);
+        };
+
+        // combines all the existing filters on the canvas for custom visualizations 
+        customFilter.getCombinedFilters = function ()
+        {
+            var filter = '';
+            // get initial filters from config
+            if(customFilter.config.filter)
+            {
+                filter += customFilter.config.filter;
+            }
+            // get values form interactive filters
+            if(customFilter.canvas.existingFilters)
+            {
+                filter += '^' + customFilter.canvas.existingFilters;
+            }
+            return filter;
+        };
+
+
+        // combines all the existing filters on the canvas for custom visualizations
+        customFilter.showFilters = function ()
+        {
+            customFilter.canvas.existingFilters = customFilter.getFilters();
+            if(customFilter.canvas.existingFilters)
+            {
+                customFilter.log("Existing Filters: " + customFilter.canvas.existingFilters);
+            } else {
+                customFilter.log("No Existing Filters Detected");
+            }
+            // getScores is defined in the individual visualization
+            customFilter.getScores();
+        };
+
+        // this logic is specific to each custom filter.  This is a place holder which will warn you if you are missing the logic rather than error out
+        customFilter.clearData = function ()
+        {
+            customFilter.log('clearData is not defined for widget');
+        }
+
+        // this logic is specific to each custom filter.  This is a place holder which will warn you if you are missing the logic rather than error out
+        customFilter.getScores = function ()
+        {
+            customFilter.log('getScores is not defined for widget');
+        }
+
+        // this logic is specific to each custom filter.  This is a place holder which will warn you if you are missing the logic rather than error out
+        customFilter.renderChart = function ()
+        {
+            customFilter.log('renderChart is not defined for widget');
+        };
+    </j:if>
+
+    return customFilter;
+    
+})();
+
+</script>
+    
+<g:macro_invoke macro="${jvar_ui_macro}" />
+
+<script>
+    // initialize the custom object
+    customFilter${jvar_uuid}.init();
+    if(customFilter${jvar_uuid}.verboseLogging)
+    {
+        // to help debugging, dump the full object
+        customFilter${jvar_uuid}.log('Debug: ', customFilter${jvar_uuid});
+    }
+</script>
+
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

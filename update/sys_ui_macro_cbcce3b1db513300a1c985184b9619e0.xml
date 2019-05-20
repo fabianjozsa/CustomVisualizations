@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro a reusable single score formula calculating the day since something.</description>
+        <media_type/>
+        <name>visual_days_since</name>
+        <scoped_name>x_snc_custom_vis_visual_days_since</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:50:26</sys_created_on>
+        <sys_id>cbcce3b1db513300a1c985184b9619e0</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>visual_days_since</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_cbcce3b1db513300a1c985184b9619e0</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:50:26</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<script>
+    customFilter${jvar_uuid}.getScores = function ()
+    {
+        var filter = customFilter${jvar_uuid}.getCombinedFilters();
+        filter += '^ORDERBYDESCopened_at'; // we are looking for the latest entry
+
+        var url = '/api/now/table/' + customFilter${jvar_uuid}.config.table + '?';
+        url += '$[AMP]sysparm_query=' + filter;
+        url += '$[AMP]sysparm_display_value=all';
+        url += '$[AMP]sysparm_fields=opened_at';
+        url += '$[AMP]sysparm_limit=1'; // we only want the last incident
+
+        customFilter${jvar_uuid}.config.baseURL = '/' + customFilter${jvar_uuid}.config.table + '_list.do?sysparm_query=' + encodeURI(filter);
+        customFilter${jvar_uuid}.getData(url);
+    };
+
+    customFilter${jvar_uuid}.processResults = function (results)
+    {
+        customFilter${jvar_uuid}.showScore(results);
+    };
+
+    customFilter${jvar_uuid}.showScore = function (results)
+    {
+        var displayRes = 'Unknown';
+        if(results.result.length == 0)
+        {
+            displayRes = 'No Incidents Found';
+        } else {
+            var dt1 = new Date(results.result[0].opened_at.display_value);
+            var dt2 = new Date();
+            displayRes = '&lt;a href="' + customFilter${jvar_uuid}.config.baseURL + '"&gt;' + ((dt2 - dt1) / (1000 * 60 * 60)).toFixed(2) + ' hours&lt;/a&gt;';
+        }
+        customFilter${jvar_uuid}.elements.main.html(displayRes);
+    };
+</script>
+
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>

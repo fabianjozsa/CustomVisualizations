@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_macro">
+    <sys_ui_macro action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <category>general</category>
+        <description>This macro contains some common logic to setup choice lists created various ways.</description>
+        <media_type/>
+        <name>setup_choices</name>
+        <scoped_name>x_snc_custom_vis_setup_choices</scoped_name>
+        <sys_class_name>sys_ui_macro</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2019-05-09 21:37:21</sys_created_on>
+        <sys_id>64d9e331db513300a1c985184b961955</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>setup_choices</sys_name>
+        <sys_package display_value="Custom Visualizations" source="x_snc_custom_vis">c622b25c1340ff4005ef54c32244b061</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="Custom Visualizations">c622b25c1340ff4005ef54c32244b061</sys_scope>
+        <sys_update_name>sys_ui_macro_64d9e331db513300a1c985184b961955</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2019-05-09 21:37:21</sys_updated_on>
+        <xml><![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+
+<g:evaluate var="jvar_cl" object="true" jelly="true">
+    var type = '${jvar_custom_object.getValue('choice_type')}';
+    var cl = null;
+    
+    if(type == 'choice')
+    {
+        cl = GlideChoiceList.getChoiceList('${jvar_custom_object.getValue('choice_table')}', '${jvar_custom_object.getValue('choice_field')}');
+    } else if(type == 'query') {
+        var cl = new GlideChoiceList();
+        var gr = new GlideAggregate('${jvar_custom_object.getValue('choice_table')}');
+        gr.groupBy('${jvar_custom_object.getValue('choice_label')}');
+        gr.groupBy('${jvar_custom_object.getValue('choice_field')}');
+        if('${jvar_custom_object.getValue('choice_query')}')
+        {
+            gr.addEncodedQuery('${jvar_custom_object.getValue('choice_query')}');
+        }
+        gr.orderBy('${jvar_custom_object.getValue('choice_label')}');
+        gr.query();
+        while(gr.next())
+        {
+            cl.add(gr.getValue('${jvar_custom_object.getValue('choice_field')}'), gr['${jvar_custom_object.getValue('choice_label')}'].getDisplayValue());
+        }
+    } else if(type == 'manual') {
+        var cl = new GlideChoiceList();
+        try {
+            var manual_choices = JSON.parse('${jvar_custom_object.getValue('manual_choices')}');
+            var labels = Object.keys(manual_choices);
+        } catch(e) {
+            gs.error('Failed to parse JSON for choices in custom filters' + e);
+        }
+        for(var c in labels)
+        {
+            cl.add(manual_choices[labels[c]], labels[c]);
+        }
+    } else {
+        gs.error('Choice type unknown: ' + type);
+    }
+    cl;
+</g:evaluate>
+
+</j:jelly>]]></xml>
+    </sys_ui_macro>
+</record_update>
